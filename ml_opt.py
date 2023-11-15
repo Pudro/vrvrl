@@ -782,7 +782,7 @@ def improve_solution_by_action(step, problem, solution, action):
     all_delta = 0.0
     num_paths = len(improved_solution)
 
-    if action in ([1, 2, 3] + range(25, 28)) or config.problem == 'tsp':
+    if action in ([1, 2, 3] + list(range(25, 28))) or config.problem == 'tsp':
         for path_index in range(num_paths):
             modified = problem.should_try(action, path_index)
             while modified:
@@ -814,7 +814,7 @@ def improve_solution_by_action(step, problem, solution, action):
     for path_index_first in range(num_paths - 1):
         for path_index_second in range(path_index_first + 1, num_paths):
             modified = problem.should_try(action, path_index_first, path_index_second)
-            if action in ([4, 5, 6, 7] + range(12, 25)):
+            if action in ([4, 5, 6, 7] + list(range(12, 25))):
                 while modified:
                     if action == 4:
                         improved_path_first, improved_path_second, delta, label = cross_two_paths(
@@ -1073,7 +1073,7 @@ def get_cycle_from_path(path):
 def construct_solution(problem, existing_solution=None, step=0):
     solution = []
     n = problem.get_num_customers()
-    customer_indices = range(n + 1)
+    customer_indices = list(range(n + 1))
     if config.problem == 'tsp':
         num_customers = n + 1
         if existing_solution is None:
@@ -1238,7 +1238,7 @@ def reconstruct_solution(problem, existing_solution, step):
 
     solution = []
     n = problem.get_num_customers()
-    customer_indices = range(n + 1)
+    customer_indices = list(range(n + 1))
 
     candidate_indices = []
     for path_index in range(len(existing_solution)):
