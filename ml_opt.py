@@ -10,7 +10,7 @@ import random
 import sys
 import tensorflow as tf
 from tensorflow.contrib import rnn
-from sequence_encoder import encode_seq, embed_seq
+from src.sequence_encoder import encode_seq, embed_seq
 
 
 EPSILON = 1e-6
