@@ -397,6 +397,7 @@ def build_multi_operator_model(raw_input):
     # layer_2 = tf.nn.dropout(layer_2, keep_prob)
 
     output_layer = tf.contrib.layers.fully_connected(layer_2, config.num_training_points, activation_fn=None)
+
     return output_layer
 
 
@@ -1141,6 +1142,11 @@ def calculate_solution_similarity(solutions):
         edge_set = edge_set.intersection(get_edge_set(solution))
     return len(edge_set)
 
+# ===== Training History ======
+history_distances = []
+history_steps = []
+history_loss = []
+history_solutions = []
 
 gpu_config = tf.ConfigProto()
 gpu_config.gpu_options.allow_growth = True
@@ -1215,6 +1221,9 @@ with tf.Session(config=gpu_config) as sess:
                 sys.stdout.flush()
 
         problem = generate_problem()
+        # print(problem.distance_matrix)
+        # print(problem.locations)
+        # print(problem.capacities)
         solution = construct_solution(problem)
         best_solution = copy.deepcopy(solution)
 
@@ -1485,6 +1494,28 @@ with tf.Session(config=gpu_config) as sess:
             save_path = saver.save(sess, "./rollout_model_{}_{}_{}.ckpt".format(index_sample, config.num_history_action_use, config.max_rollout_steps))
             print("Model saved in path: %s" % save_path)
 
+        #history_distances.append(min_distance)
+        history_distances = distances
+        history_steps.append(min_step)
+        history_loss.append(loss)
+        history_solutions.append(solution)
+
     # save_path = saver.save(sess, "./rollout_model.ckpt")
     # print("Model saved in path: %s" % save_path)
     print('solving time = {}'.format(datetime.datetime.now() - start))
+
+    history_data = {
+        'distances': history_distances,
+        'min_distance': min_distance,
+        'steps': history_steps,
+        'loss': history_loss,
+        'solving_time': datetime.datetime.now() - start,
+        'num_points': config.num_training_points,
+        'num_episodes': config.num_episode,
+        'solutions': history_solutions,
+        'best_solution': best_solution,
+        'problem': problem
+    }
+
+    with open(f'./results/vrp_{config.num_training_points}_e_{config.num_episode}.pkl', 'wb') as f:
+        pickle.dump(history_data, f)
