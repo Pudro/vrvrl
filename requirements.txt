@@ -1,4 +1,4 @@
-python_version == 3.7.17
+# checked for python 3.7.17
 
 absl-py==2.0.0
 astor==0.8.1
