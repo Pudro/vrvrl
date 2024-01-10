@@ -1495,7 +1495,7 @@ if config.train:
             timers_epoch.extend(action_timers)
             timers.append(timers_epoch)
             if config.model_to_restore is None and index_sample > 0 and index_sample % 500 == 0:
-                save_path = saver.save(sess, "./rollout_model_{}_{}_{}.ckpt".format(index_sample, config.num_history_action_use, config.max_rollout_steps))
+                save_path = saver.save(sess, "./vrp_{}_rollout_model_{}_{}_{}.ckpt".format(config.num_training_points, index_sample, config.num_history_action_use, config.max_rollout_steps))
                 print("Model saved in path: %s" % save_path)
 
             #history_distances.append(min_distance)
