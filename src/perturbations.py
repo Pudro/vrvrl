@@ -1,6 +1,8 @@
 import copy
 
 def reconstruct_solution_by_exchange(problem, existing_solution, paths_ruined):
+    """Equivalent of Random-exchange Perturbation in the paper
+       Randomly exchange m pairs of nearby customers between two routes"""
     path0 = copy.deepcopy(existing_solution[paths_ruined[0]])
     path1 = copy.deepcopy(existing_solution[paths_ruined[1]])
     num_exchanged = 0
