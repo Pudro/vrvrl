@@ -1524,9 +1524,6 @@ if config.train:
         with open(f'./results/vrp_{config.num_training_points}_e_{config.num_episode}.pkl', 'wb') as f:
             pickle.dump(history_data, f)
 
-    raise NotImplementedError
-
-
 else:
 # ===== Training History ======
     history_distances = []
