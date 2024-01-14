@@ -29,6 +29,7 @@ from src.improvements import (
 )
 from src.perturbations import reconstruct_solution_by_exchange
 from src.problem import Problem
+from src.parameters import Parameters
 
 
 def str2bool(v):
@@ -46,6 +47,7 @@ def get_config(args=None):
     parser = argparse.ArgumentParser(description="Meta optimization")
 
     parser.add_argument('--train', action='store_true', help='Train the model')
+    parser.add_argument('--save_every_n_episode', type=int, default=500, help='Save intermediate model every n-th episode')
 
     parser.add_argument('--epoch_size', type=int, default=5120000, help='Epoch size')
 
@@ -1494,8 +1496,8 @@ if config.train:
             timers_epoch = [inference_time, gpu_inference_time, env_act_time, (datetime.datetime.now() - start_timer).total_seconds()]
             timers_epoch.extend(action_timers)
             timers.append(timers_epoch)
-            if config.model_to_restore is None and index_sample > 0 and index_sample % 500 == 0:
-                save_path = saver.save(sess, "./vrp_{}_rollout_model_{}_{}_{}.ckpt".format(config.num_training_points, index_sample, config.num_history_action_use, config.max_rollout_steps))
+            if config.model_to_restore is None and index_sample > 0 and index_sample % config.save_every_n_episode == 0:
+                save_path = saver.save(sess, str(Parameters.MODEL_DIR/"vrp_{}_rollout_model_{}_{}_{}.ckpt").format(config.num_training_points, index_sample, config.num_history_action_use, config.max_rollout_steps))
                 print("Model saved in path: %s" % save_path)
 
             #history_distances.append(min_distance)
@@ -1524,8 +1526,8 @@ if config.train:
         with open(f'./results/vrp_{config.num_training_points}_e_{config.num_episode}.pkl', 'wb') as f:
             pickle.dump(history_data, f)
 
-else:
-# ===== Training History ======
+else: # Test TODO:
+
     history_distances = []
     history_steps = []
     history_loss = []
@@ -1542,10 +1544,14 @@ else:
         for k, v in zip(variables_names, values):
             print("Variable={}, Shape={}".format(k, v.shape))
         sys.stdout.flush()
+
+        # saver = tf.train.import_meta_graph('./models/vrp_100_rollout_model_900_0_20000.ckpt.meta')
         saver = tf.train.Saver()
         if config.model_to_restore is not None:
             saver.restore(sess, config.model_to_restore)
+            # saver.restore(sess, tf.train.latest_checkpoint('./models'))
 
+        raise NotImplementedError
         distances = []
         steps = []
         consolidated_distances, consolidated_steps = [], []
@@ -1873,7 +1879,7 @@ else:
             timers_epoch = [inference_time, gpu_inference_time, env_act_time, (datetime.datetime.now() - start_timer).total_seconds()]
             timers_epoch.extend(action_timers)
             timers.append(timers_epoch)
-            if config.model_to_restore is None and index_sample > 0 and index_sample % 500 == 0:
+            if config.model_to_restore is None and index_sample > 0 and index_sample % config.save_every_n_episode == 0:
                 save_path = saver.save(sess, "./vrp_{}_rollout_model_{}_{}_{}.ckpt".format(config.num_training_points, index_sample, config.num_history_action_use, config.max_rollout_steps))
                 print("Model saved in path: %s" % save_path)
 
