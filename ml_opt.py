@@ -93,7 +93,7 @@ def get_config(args=None):
     parser.add_argument('--model_to_restore', type=str, default=None, help="")
     parser.add_argument('--max_points_per_trip', type=int, default=15, help="upper bound of number of point in one trip")
     parser.add_argument('--max_trips_per_solution', type=int, default=15, help="upper bound of number of trip in one solution")
-    parser.add_argument('--test_time', type=float, default=float('inf'), help="max time of the whole test (not to be confused with max_rollout_seconds)")
+    parser.add_argument('--test_time', type=float, default=999999, help="max time of the whole test (not to be confused with max_rollout_seconds)")
     config = parser.parse_args(args)
     return config
 
@@ -778,9 +778,11 @@ def get_num_points(config):
 
 
 def generate_problem():
-    np.random.seed(config.problem_seed)
-    random.seed(config.problem_seed)
-    config.problem_seed += 1
+    # NOTE: commented out - during testing we want to generate the
+    # same problem each epoch, but obtain different solutions
+    # np.random.seed(config.problem_seed)
+    # random.seed(config.problem_seed)
+    #config.problem_seed += 1
 
     num_sample_points = get_num_points(config)
     if config.problem == 'vrp':
@@ -819,8 +821,8 @@ def generate_problem():
 
     capacities = get_random_capacities(len(locations))
     problem = Problem(locations, capacities)
-    np.random.seed(config.problem_seed * 10)
-    random.seed(config.problem_seed * 10)
+    # np.random.seed(config.problem_seed * 10)
+    # random.seed(config.problem_seed * 10)
     return problem
 
 
@@ -1529,6 +1531,7 @@ else:
     # history_loss = []
     # history_solutions = []
     summary_writer = SummaryWriter(str(Parameters.TENSORBOARD_DIR/config.run_name))
+    summary_writer.add_custom_scalars({'All Episodes': {'travelling_cost': ['Multiline',[f'travelling_cost/episode_{e}' for e in range(config.num_episode)]]}})
 
     gpu_config = tf.ConfigProto()
     gpu_config.gpu_options.allow_growth = True
@@ -1553,8 +1556,7 @@ else:
         step_record = np.zeros((2, num_checkpoint))
         distance_record = np.zeros((2, num_checkpoint))
         start = datetime.datetime.now()
-        seed = config.problem_seed
-        tf.set_random_seed(seed)
+        tf.set_random_seed(config.problem_seed)
 
         Transition = collections.namedtuple("Transition", ["state", "trip", "next_distance", "action", "reward", "next_state", "done"])
 
@@ -1565,9 +1567,12 @@ else:
             actions = []
             advantages = []
             action_labels = []
-            
+
 
             # NOTE: here the problem is generated
+            print(config.problem_seed)
+            np.random.seed(config.problem_seed)
+            random.seed(config.problem_seed)
             problem = generate_problem()
 
             # NOTE: here the seed is freed, so the test can be performed
@@ -1577,10 +1582,10 @@ else:
             solution = construct_solution(problem)
             best_solution = copy.deepcopy(solution)
 
-            summary_writer.add_text(f'episode_{e}/locations', str(problem.locations))
-            summary_writer.add_text(f'episode_{e}/initial_routes', str(solution))
+            summary_writer.add_text(f'locations/episode_{e}', str(problem.locations))
+            summary_writer.add_text(f'initial_routes/episode_{e}', str(solution))
             summary_writer.add_figure(
-                f'episode_{e}/initial_plot', generate_route_plot(problem.locations, solution)
+                f'initial_plot/episode_{e}', generate_route_plot(problem.locations, solution)
             )
 
             if config.use_attention_embedding:
@@ -1708,6 +1713,9 @@ else:
                     temp_time_timers = temp_timers[1::2]
                     print('time ={}'.format('\t\t'.join([str(x) for x in temp_time_timers])))
                     print('count={}'.format('\t\t'.join([str(x) for x in temp_count_timers])))
+                    summary_writer.add_figure(
+                        f'step_solution/episode_{e}', generate_route_plot(problem.locations, best_solution), step
+                    )
                 if done:
                     break
 
@@ -1725,9 +1733,14 @@ else:
                 env_act_time += (end_timer - start_timer).total_seconds()
                 start_timer = end_timer
 
-                summary_writer.add_scalar(f'episode_{e}/travelling_cost', min_distance, step)
+                summary_writer.add_scalar(f'travelling_cost/episode_{e}', min_distance, step)
                 if datetime.datetime.now() - start > datetime.timedelta(seconds=config.test_time):
-                    print('Test time is over. Exiting...')
+                    print('Test time is over. Stopping rollout...')
+                    summary_writer.add_text(f'final_routes/episode_{e}', str(best_solution), step)
+                    summary_writer.add_figure(
+                        f'final_plot/episode_{e}', generate_route_plot(problem.locations, best_solution), step
+                    )
+                    summary_writer.add_text(tag=f'problem/episode_{e}', text_string=str(problem.to_dict()), global_step=step)
                     sys.exit()
 
             if config.use_random_rollout:
@@ -1867,6 +1880,11 @@ else:
             # save_path = saver.save(sess, "./rollout_model.ckpt")
             # print("Model saved in path: %s" % save_path)
             print('solving time = {}'.format(datetime.datetime.now() - start))
+            summary_writer.add_text(f'final_routes/episode_{e}', str(best_solution), step)
+            summary_writer.add_figure(
+                f'final_plot/episode_{e}', generate_route_plot(problem.locations, best_solution), step
+            )
+            summary_writer.add_text(tag=f'problem/episode_{e}', text_string=str(problem.to_dict()), global_step=step)
 
             # history_data = {
             #     'distances': history_distances,
