@@ -73,4 +73,17 @@ class Problem:
                self.change_at[index_second] >= no_improvement_at or \
                self.change_at[index_third] >= no_improvement_at
 
+    def to_dict(self):
+        return {
+            'locations': self.locations,
+            'capacities': self.capacities,
+            'distance_matrix': self.distance_matrix,
+            'total_customer_capacities': self.total_customer_capacities,
+            'change_at': self.change_at,
+            'no_improvement_at': self.no_improvement_at,
+            'num_solutions': self.num_solutions,
+            'num_traversed': self.num_traversed,
+            'distance_hashes': self.distance_hashes
+        }
+
 
